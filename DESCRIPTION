@@ -1,0 +1,19 @@
+Package: hydroAgri
+Title: Bilan Hydrique des Cultures et Besoins en Irrigation
+Version: 0.1.0
+Authors@R: person("Mafhoum", "Chaimae", email = "mafhoumchaimae@example.com", role = c("aut", "cre"))
+Description: Package R pour calculer automatiquement l'evapotranspiration
+    de reference (ETo), l'evapotranspiration culturale (ETc), le bilan
+    hydrique journalier et les besoins en irrigation selon la methode FAO-56.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Depends: R (>= 4.0.0)
+Imports:
+    ggplot2
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
