@@ -39,9 +39,9 @@ plot_water_balance <- function(bilan, dates = NULL,
   p1 <- ggplot2::ggplot(bilan, ggplot2::aes(x = jour)) +
     ggplot2::geom_bar(ggplot2::aes(y = Rain),
                       stat = "identity", fill = "#2196F3", alpha = 0.6) +
-    ggplot2::geom_line(ggplot2::aes(y = ETc), color = "red", size = 1) +
+    ggplot2::geom_line(ggplot2::aes(y = ETc), color = "red", linewidth = 1) +
     ggplot2::geom_line(ggplot2::aes(y = Irrigation),
-                       color = "orange", size = 1, linetype = "dashed") +
+                       color = "orange", linewidth = 1, linetype = "dashed") +
     ggplot2::labs(title = titre,
                   x = x_lab,
                   y = "mm/jour",
@@ -49,9 +49,9 @@ plot_water_balance <- function(bilan, dates = NULL,
     ggplot2::theme_minimal()
 
   p2 <- ggplot2::ggplot(bilan, ggplot2::aes(x = jour)) +
-    ggplot2::geom_line(ggplot2::aes(y = Stockage), color = "green", size = 1) +
+    ggplot2::geom_line(ggplot2::aes(y = Stockage), color = "green", linewidth = 1) +
     ggplot2::geom_line(ggplot2::aes(y = Deficit), color = "red",
-                       size = 1, linetype = "dashed") +
+                       linewidth = 1, linetype = "dashed") +
     ggplot2::labs(x = x_lab, y = "mm",
                   caption = "Vert = Stockage | Rouge = Deficit") +
     ggplot2::theme_minimal()
