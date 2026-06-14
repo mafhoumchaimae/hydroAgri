@@ -3,6 +3,7 @@
 export(calc_etc)
 export(calc_eto)
 export(calc_kc)
+export(compare_station_vs_raster)
 export(import_weather_data)
 export(interpolate_climate)
 export(irrigation_schedule)
