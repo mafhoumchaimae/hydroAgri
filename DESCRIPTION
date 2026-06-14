@@ -11,9 +11,16 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.0.0
 Depends: R (>= 4.0.0)
 Imports:
-    ggplot2
+    ggplot2,
+    stats
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown
+    rmarkdown,
+    raster,
+    sp,
+    gstat,
+    readxl,
+    gridExtra,
+    shiny
 VignetteBuilder: knitr
