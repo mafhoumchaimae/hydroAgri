@@ -1,0 +1,180 @@
+---
+title: "Introduction a hydroAgri : bilan hydrique et irrigation (methode FAO-56)"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction a hydroAgri}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 4
+)
+set.seed(42)
+```
+
+## Introduction
+
+**hydroAgri** est un package R qui implemente la methode **FAO-56**
+(Allen et al., 1998) pour estimer l'evapotranspiration de reference (ETo),
+l'evapotranspiration culturale (ETc), le bilan hydrique journalier du sol
+et le calendrier optimal d'irrigation.
+
+Cette vignette presente le workflow complet, etape par etape :
+
+1. Import et preparation des donnees meteorologiques
+2. Calcul de l'evapotranspiration de reference (ETo)
+3. Calcul des coefficients culturaux (Kc)
+4. Calcul de l'evapotranspiration culturale (ETc)
+5. Bilan hydrique journalier du sol
+6. Calendrier d'irrigation
+7. Resume saisonnier
+8. Visualisation du bilan hydrique
+
+```{r setup}
+library(hydroAgri)
+```
+
+## 1. Donnees meteorologiques
+
+Le package fournit un jeu de donnees d'exemple, `climat_exemple`, contenant
+des observations journalieres de temperature, vent et precipitations.
+
+```{r}
+data(climat_exemple)
+head(climat_exemple)
+```
+
+La fonction `import_weather_data()` permet d'importer des donnees depuis un
+fichier CSV/Excel, de gerer les dates, de detecter les valeurs manquantes et
+de calculer la temperature moyenne journaliere (`Tmean`). Elle accepte aussi
+directement un dataframe deja charge en memoire :
+
+```{r}
+meteo <- import_weather_data(data = climat_exemple, format = "dataframe")
+head(meteo)
+```
+
+## 2. Calcul de l'ETo (Penman-Monteith FAO-56)
+
+`calc_eto()` calcule l'evapotranspiration de reference journaliere a partir
+de Tmax, Tmin, du rayonnement solaire, de la vitesse du vent et de
+l'humidite relative.
+
+```{r}
+eto <- mapply(calc_eto,
+               tmax       = meteo$Tmax,
+               tmin       = meteo$Tmin,
+               solar_rad  = meteo$Rs,
+               wind_speed = meteo$Wind,
+               humidity   = meteo$RH)
+
+meteo$ETo <- eto
+head(meteo)
+```
+
+## 3. Coefficients culturaux (Kc)
+
+`calc_kc()` genere une serie journaliere de coefficients culturaux Kc selon
+les stades phenologiques d'une culture (initial, developpement, mi-saison,
+fin de saison), en se basant sur les valeurs de reference FAO-56.
+
+```{r}
+kc <- calc_kc(culture = "ble",
+               date_debut = as.character(min(meteo$date)),
+               duree_stades = c(25, 40, 40, 20))
+head(kc)
+```
+
+```{r}
+n_jours <- nrow(kc)
+meteo_sub <- meteo[seq_len(n_jours), ]
+```
+
+## 4. Evapotranspiration culturale (ETc)
+
+`calc_etc()` calcule l'ETc journaliere selon la relation `ETc = Kc x ETo`.
+
+```{r}
+etc <- calc_etc(eto = meteo_sub$ETo, kc = kc$Kc)
+head(etc)
+```
+
+## 5. Calendrier d'irrigation
+
+`irrigation_schedule()` determine les dates et les doses d'irrigation
+optimales en fonction d'un seuil de Reserve Facilement Utilisable (RFU).
+
+```{r}
+planning <- irrigation_schedule(
+  etc  = etc,
+  rain = meteo_sub$Rain,
+  RU   = 100,
+  RFU_ratio = 0.5,
+  dates = meteo_sub$date
+)
+
+planning$evenements
+cat("Volume total irrigue :", planning$total_irrigation, "mm\n")
+```
+
+## 6. Bilan hydrique du sol
+
+`soil_water_balance()` calcule le bilan hydrique journalier du sol : stock
+d'eau disponible, drainage et deficit hydrique, en fonction de l'ETc, de la
+pluie, de l'irrigation et de la reserve utile (RU) du sol. On reutilise ici
+le calendrier d'irrigation calcule a l'etape precedente.
+
+```{r}
+bilan <- soil_water_balance(
+  etc        = etc,
+  rain       = meteo_sub$Rain,
+  irrigation = planning$calendrier$Irrigation,
+  RU         = 100
+)
+head(bilan)
+```
+
+## 7. Resume saisonnier
+
+`summarize_water_balance()` calcule les statistiques saisonnieres : ETc
+totale, pluie totale, irrigation totale, deficit cumule, drainage total et
+efficacite de l'irrigation.
+
+```{r}
+resume <- summarize_water_balance(bilan)
+resume
+```
+
+## 8. Visualisation du bilan hydrique
+
+`plot_water_balance()` produit des graphiques du bilan hydrique : pluie,
+ETc, irrigation, stockage du sol et deficit.
+
+```{r, fig.alt = "Graphiques du bilan hydrique (pluie, ETc, irrigation, stockage et deficit)"}
+plot_water_balance(bilan, dates = meteo_sub$date, titre = "Bilan hydrique - Ble")
+```
+
+## Conclusion
+
+Ce workflow illustre l'enchainement complet propose par **hydroAgri** :
+import des donnees meteo, calcul de l'ETo et des Kc, calcul de l'ETc,
+bilan hydrique du sol, calendrier d'irrigation et synthese saisonniere.
+
+Le package propose egalement des fonctionnalites avancees, non couvertes
+ici (necessitant des packages supplementaires comme `raster`, `sp` et
+`gstat`) :
+
+- `load_raster_eto()` et `compare_station_vs_raster()` pour travailler avec
+  des donnees raster d'ETo (MODIS, WorldClim) et les comparer aux stations
+  meteo,
+- `interpolate_climate()` pour interpoler spatialement des donnees
+  climatiques (IDW, krigeage),
+- `plot_irrigation_map()` pour cartographier les besoins en irrigation,
+- `generate_report()` pour generer un rapport HTML automatique,
+- `shiny_dashboard()` pour explorer les resultats via une application
+  interactive Shiny.
